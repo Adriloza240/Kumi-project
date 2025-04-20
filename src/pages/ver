@@ -1,0 +1,192 @@
+import { useEffect, useState } from "react";
+import { jsPDF } from "jspdf";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
+import Modal from "@/components/Modal";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { useToast } from "@/hooks/useToast";
+
+export default function EmpresaDashboard() {
+  const [showModal, setShowModal] = useState(false);
+  const [titulo, setTitulo] = useState("");
+  const [descripcion, setDescripcion] = useState("");
+  const [salario, setSalario] = useState("");
+  const [misEmpleos, setMisEmpleos] = useState([]);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(() => () => {});
+  const [confirmMessage, setConfirmMessage] = useState("");
+  const { showToast } = useToast();
+
+  const [ciudad, setCiudad] = useState("");
+  const [sector, setSector] = useState("");
+  const [tipoContrato, setTipoContrato] = useState("");
+  const [ubicacion, setUbicacion] = useState("");
+  const [objetivo, setObjetivo] = useState("");
+  const [funciones, setFunciones] = useState("");
+  const [requisitos, setRequisitos] = useState("");
+  const [requisitosExtra, setRequisitosExtra] = useState("");
+  const [beneficios, setBeneficios] = useState("");
+  const [fechaLimite, setFechaLimite] = useState("");
+  const [logoEmpresa, setLogoEmpresa] = useState(null);
+
+  const publicarEmpleo = (e) => {
+    e.preventDefault();
+    const nuevoEmpleo = {
+      id: Date.now(),
+      titulo,
+      descripcion,
+      salario,
+      ciudad,
+      sector,
+      tipoContrato,
+      ubicacion,
+      objetivo,
+      funciones,
+      requisitos,
+      requisitosExtra,
+      beneficios,
+      fechaLimite,
+      logoEmpresa,
+      empresa: JSON.parse(localStorage.getItem("user")).nombre,
+      postulantes: [],
+    };
+
+    const empleosGuardados = JSON.parse(localStorage.getItem("empleos")) || [];
+    empleosGuardados.push(nuevoEmpleo);
+    localStorage.setItem("empleos", JSON.stringify(empleosGuardados));
+    showToast("✅ Empleo publicado correctamente");
+    setTitulo("");
+    setDescripcion("");
+    setSalario("");
+    actualizarLista();
+    setShowModal(false);
+  };
+
+  const actualizarLista = () => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    const todos = JSON.parse(localStorage.getItem("empleos")) || [];
+    const mios = todos.filter((e) => e.empresa === user.nombre);
+    setMisEmpleos(mios);
+  };
+
+  const eliminarPostulante = (empleoId, i) => {
+    setConfirmMessage("¿Deseas eliminar este postulante?");
+    setConfirmAction(() => () => {
+      const nuevos = [...misEmpleos];
+      nuevos.find((emp) => emp.id === empleoId).postulantes.splice(i, 1);
+      localStorage.setItem(
+        "empleos",
+        JSON.stringify(
+          JSON.parse(localStorage.getItem("empleos")).map((e) =>
+            e.id === empleoId ? nuevos.find((emp) => emp.id === empleoId) : e
+          )
+        )
+      );
+      setMisEmpleos([...nuevos]);
+      showToast("❌ Postulante eliminado");
+    });
+    setConfirmOpen(true);
+  };
+
+  const exportarPostulantes = (empleo) => {
+    const doc = new jsPDF();
+    const logo = new Image();
+    logo.src = "/assets/logo.png";
+    logo.onload = () => {
+      doc.addImage(logo, "PNG", 10, 8, 30, 15);
+      doc.setFontSize(16);
+      doc.setTextColor(40, 40, 40);
+      doc.text(`Postulantes a: ${empleo.titulo}`, 50, 18);
+      doc.setFontSize(10);
+      let y = 28;
+      const detalles = [
+        { label: "Empresa", value: empleo.empresa },
+        { label: "Ciudad", value: empleo.ciudad },
+        { label: "Sector", value: empleo.sector },
+        { label: "Tipo de contrato", value: empleo.tipoContrato },
+        { label: "Ubicación", value: empleo.ubicacion },
+        { label: "Objetivo", value: empleo.objetivo },
+        { label: "Funciones", value: empleo.funciones },
+        { label: "Requisitos", value: empleo.requisitos },
+        { label: "Requisitos extra", value: empleo.requisitosExtra },
+        { label: "Beneficios", value: empleo.beneficios },
+      ];
+      detalles.forEach((det) => {
+        if (det.value) {
+          doc.text(`${det.label}: ${det.value}`, 10, y);
+          y += 6;
+        }
+      });
+
+      doc.setFillColor(30, 58, 138);
+      doc.rect(10, y, 190, 8, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.text("Nombre", 15, y + 5);
+      doc.text("Estado", 90, y + 5);
+      y += 12;
+      doc.setTextColor(0);
+      empleo.postulantes.forEach((p) => {
+        doc.text(p.nombre, 15, y);
+        doc.text(p.estado, 90, y);
+        y += 8;
+      });
+
+      doc.save(`postulantes_${empleo.titulo}.pdf`);
+      showToast("✅ PDF exportado correctamente");
+    };
+  };
+
+  const exportarPostulantesExcel = async (empleo) => {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Postulantes");
+
+    sheet.addRow(["Detalles de la Oferta"]);
+    sheet.addRow(["Campo", "Valor"]);
+
+    const detalles = [
+      ["Empresa", empleo.empresa],
+      ["Título", empleo.titulo],
+      ["Ciudad", empleo.ciudad],
+      ["Sector", empleo.sector],
+      ["Tipo de contrato", empleo.tipoContrato],
+      ["Ubicación", empleo.ubicacion],
+      ["Objetivo", empleo.objetivo],
+      ["Funciones", empleo.funciones],
+      ["Requisitos", empleo.requisitos],
+      ["Requisitos extra", empleo.requisitosExtra],
+      ["Beneficios", empleo.beneficios],
+    ];
+
+    detalles.forEach((det) => sheet.addRow(det));
+    sheet.addRow([]);
+    sheet.addRow(["Postulantes"]);
+    sheet.columns = [
+      { header: "Nombre", key: "nombre", width: 30 },
+      { header: "Estado", key: "estado", width: 15 },
+    ];
+
+    empleo.postulantes.forEach((p) => {
+      sheet.addRow({ nombre: p.nombre, estado: p.estado });
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `postulantes_${empleo.titulo}.xlsx`);
+    showToast("✅ Excel exportado correctamente");
+  };
+
+  const eliminarEmpleo = (id) => {
+    setConfirmMessage("¿Deseas eliminar este empleo completo?");
+    setConfirmAction(() => () => {
+      const nuevos = misEmpleos.filter((e) => e.id !== id);
+      const todos = JSON.parse(localStorage.getItem("empleos")) || [];
+      const actualizados = todos.filter((e) => e.id !== id);
+      localStorage.setItem("empleos", JSON.stringify(actualizados));
+      setMisEmpleos(nuevos);
+      showToast("❌ Empleo eliminado correctamente");
+    });
+    setConfirmOpen(true);
+  };
+
+  useEffect(() => {
+    actualizarLista();
+  }, []);
