@@ -45,7 +45,7 @@ function EmpresaDashboard() {
   const [confirmAction, setConfirmAction] = useState(() => () => {});
   const [confirmMessage, setConfirmMessage] = useState("");
   const { showToast } = useToast();
-
+const getUserCVKey = (user) => `cv_${user?.correo}`;
   const [ciudad, setCiudad] = useState("");
   const [sector, setSector] = useState("");
   const [tipoContrato, setTipoContrato] = useState("");
@@ -413,7 +413,7 @@ function EmpresaDashboard() {
   const [libretaMilitar, setLibretaMilitar] = useState("");
   const [expectativaSalarial, setExpectativaSalarial] = useState("");
   const [ci, setCI] = useState("");
-
+  const getUserCVKey = (user) => `cv_${user?.correo}`;
       const { showToast } = useToast();
 
     
@@ -421,46 +421,54 @@ function EmpresaDashboard() {
       useEffect(() => {
         const storedEmpleos = JSON.parse(localStorage.getItem("empleos")) || [];
         setEmpleos(storedEmpleos);
-      
-        const cvGuardado = JSON.parse(localStorage.getItem("cv"));
-        if (cvGuardado) {
-          // Mantén estos si aún los usas
-          setProfesion(cvGuardado.profesion || "");
-          setExperiencia(cvGuardado.experiencia || "");
-          setHabilidades(cvGuardado.habilidades || "");
-          
-          // Agrega la carga de los nuevos estados
-          setAvatar(cvGuardado.avatar || null);
-          setNombreCompleto(cvGuardado.nombreCompleto || "");
-          setFechaNacimiento(cvGuardado.fechaNacimiento || "");
-          setSexo(cvGuardado.sexo || "");
-          setTelefono(cvGuardado.telefono || "");
-          setLicencia(cvGuardado.licencia || "No");
-          setLicenciaNumero(cvGuardado.licenciaNumero || "");
-          setPerfilProfesional(cvGuardado.perfilProfesional || "");
-          setFormaciones(cvGuardado.formaciones || []);
-          setExperiencias(cvGuardado.experiencias || []);
-          setHabilidadesList(cvGuardado.habilidadesList || []);
-          setCursos(cvGuardado.cursos || []);
-          setPremios(cvGuardado.premios || []);
-          setReferencias(cvGuardado.referencias || []);
+        
+        const user = JSON.parse(localStorage.getItem("user"));
+        if (user) {
+          const cvGuardado = JSON.parse(localStorage.getItem(getUserCVKey(user)));
+          if (cvGuardado) {
+            setProfesion(cvGuardado.profesion || "");
+            setExperiencia(cvGuardado.experiencia || "");
+            setHabilidades(cvGuardado.habilidades || "");
+            setAvatar(cvGuardado.avatar || null);
+            setNombreCompleto(cvGuardado.nombreCompleto || "");
+            setFechaNacimiento(cvGuardado.fechaNacimiento || "");
+            setSexo(cvGuardado.sexo || "");
+            setTelefono(cvGuardado.telefono || "");
+            setLicencia(cvGuardado.licencia || "No");
+            setLicenciaNumero(cvGuardado.licenciaNumero || "");
+            setPerfilProfesional(cvGuardado.perfilProfesional || "");
+            setFormaciones(cvGuardado.formaciones || []);
+            setExperiencias(cvGuardado.experiencias || []);
+            setHabilidadesList(cvGuardado.habilidadesList || []);
+            setCursos(cvGuardado.cursos || []);
+            setPremios(cvGuardado.premios || []);
+            setReferencias(cvGuardado.referencias || []);
+          }
         }
       }, []);
-      
     
 
 
       const crearCV = (e) => {
         e.preventDefault();
+        const user = JSON.parse(localStorage.getItem("user"));
+        
+        if (!user) {
+          showToast("⚠️ Debes iniciar sesión para guardar tu CV");
+          return;
+        }
+      
         const cvData = {
           profesion,
           experiencia,
           habilidades,
           avatar,
-          nombreCompleto,
+          nombreCompleto: nombreCompleto || `${user.nombre} ${user.apellido || ''}`.trim(),
           fechaNacimiento,
           sexo,
+          correo: user.correo,
           telefono,
+          direccion,
           licencia,
           licenciaNumero,
           perfilProfesional,
@@ -469,16 +477,27 @@ function EmpresaDashboard() {
           habilidadesList,
           cursos,
           premios,
-          referencias
+          referencias,
+          userId: user.correo
         };
       
-        localStorage.setItem("cv", JSON.stringify(cvData));
+        // Guardar en formato individual
+        localStorage.setItem(`cv_${user.correo}`, JSON.stringify(cvData));
+        
+        // Guardar también en el array general para compatibilidad
+        const allCVs = JSON.parse(localStorage.getItem("cvs")) || [];
+        const existingIndex = allCVs.findIndex(cv => cv.userId === user.correo);
+        
+        if (existingIndex >= 0) {
+          allCVs[existingIndex] = cvData;
+        } else {
+          allCVs.push(cvData);
+        }
+        
+        localStorage.setItem("cvs", JSON.stringify(allCVs));
         showToast("✅ CV guardado correctamente");
         setShowModal(false);
       };
-
-
-
 
     const postularme = (id) => {
       const user = JSON.parse(localStorage.getItem("user"));
@@ -685,17 +704,24 @@ function EmpresaDashboard() {
 
     return (
       <div className="space-y-12">
-        <div className="flex justify-between items-center">
-          <h3 className="text-2xl font-bold text-green-600">Panel de Empleado</h3>
-          {(nombreCompleto || profesion) && (
+     <div className="flex justify-between items-center">
+  <h3 className="text-2xl font-bold text-green-600">Panel de Empleado</h3>
+  {nombreCompleto || profesion ? (
     <button
       onClick={() => setShowModal(true)}
       className="ml-2 py-2 px-5 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white rounded-xl font-medium hover:scale-105 transition"
     >
       ✏️ Editar CV
     </button>
+  ) : (
+    <button
+      onClick={() => setShowModal(true)}
+      className="ml-2 py-2 px-5 bg-gradient-to-r from-blue-500 to-blue-700 text-white rounded-xl font-medium hover:scale-105 transition"
+    >
+      📄 Crear CV
+    </button>
   )}
-        </div>
+</div>
         {nombreCompleto && (
     <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-100 space-y-3 mt-6">
       <h3 className="text-xl font-bold text-indigo-600">📄 Mi Currículum</h3>
@@ -771,8 +797,10 @@ function EmpresaDashboard() {
 
 
 
-  <Modal isOpen={showModal} onClose={() => setShowModal(false)}>
-    <h3 className="text-xl font-bold mb-4 text-green-600">Crear mi Currículum</h3>
+<Modal isOpen={showModal} onClose={() => setShowModal(false)}>
+  <h3 className="text-xl font-bold mb-4 text-green-600">
+    {nombreCompleto || profesion ? "Editar mi Currículum" : "Crear mi Currículum"}
+  </h3>
     <form onSubmit={crearCV} className="space-y-4">
       {/* INFORMACIÓN PERSONAL */}
       <div className="border-b pb-4 mb-4">
@@ -1585,4 +1613,3 @@ function EmpresaDashboard() {
   </div>
   );
   }
-
