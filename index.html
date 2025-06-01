@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Trabajopolis</title>
 </head>
-<script src="/githubStorage.js"></script>
 <body>
-  <div id="root"></div>  <!-- Esto es obligatorio -->
+  <div id="root"></div>  <!-- Contenedor para React (obligatorio) -->
+  
+  <!-- Script del proxy ANTES de main.jsx -->
+  <script src="/githubStorage.js"></script> 
+  
+  <!-- Script principal de React -->
   <script type="module" src="/src/main.jsx"></script>
 </body>
-
 </html>
