@@ -1,5 +1,24 @@
 {
-    "empleos": [],
-    "cvs": [],
-    "users": []
-  }
+  "empleos": [
+    {
+      "id": 1,
+      "titulo": "Desarrollador Frontend",
+      "empresa": "Kumi Tech",
+      "ciudad": "Asunción",
+      "sector": "Tecnología",
+      "tipoContrato": "Tiempo completo",
+      "descripcion": "Buscamos desarrollador con experiencia en React",
+      "salario": "5000000",
+      "postulantes": []
+    }
+  ],
+  "usuarios": [
+    {
+      "nombre": "Admin",
+      "correo": "admin@kumi.com",
+      "password": "123456",
+      "tipo": "empresa"
+    }
+  ],
+  "cvs": []
+}
