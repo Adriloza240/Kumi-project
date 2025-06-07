@@ -5,7 +5,8 @@ import "jspdf-autotable";
 import { motion } from "framer-motion";
 import Publicidad from "../components/Publicidad";
 import Modal from "../components/Modal";
-
+import { db } from "../firebase";
+import { collection, getDocs, query, where } from "firebase/firestore";
 export default function Buscar() {
   const [modo, setModo] = useState("empleo");
   const [empleos, setEmpleos] = useState([]);
