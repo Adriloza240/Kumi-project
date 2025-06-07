@@ -1,15 +1,5 @@
-
-const DB_URL = '/db.json'; // Ruta a tu archivo en GitHub Pages
-
-export const getEmpleos = async () => {
-  const response = await fetch(DB_URL);
-  const data = await response.json();
-  return data.empleos || [];
-};
-
-export const saveEmpleo = (nuevoEmpleo) => {
-  // Guarda solo en localStorage (solo para el usuario actual)
-  const empleos = JSON.parse(localStorage.getItem('empleos') || '[]');
-  empleos.push({ ...nuevoEmpleo, id: Date.now() });
-  localStorage.setItem('empleos', JSON.stringify(empleos));
-};
+{
+    "empleos": [],
+    "cvs": [],
+    "users": []
+  }
